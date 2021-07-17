@@ -1,0 +1,5 @@
+config/
+download/
+.idea/
+ergodownloader
+build/*.zip
