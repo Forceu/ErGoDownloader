@@ -109,7 +109,11 @@ func DownloadSavedPosts(posts []interface{}, token string, unsave bool) (string,
 		}
 		isValidLink, extension := helper.IsDirectLink(childData["url"].(string))
 		if isValidLink {
-			err := helper.DownloadFile(childData["title"].(string)+extension, childData["url"].(string))
+			duplicate, err := helper.DownloadFile(childData["title"].(string)+extension, childData["url"].(string))
+			if duplicate {
+				fmt.Println("Duplicate, not saving: " + childData["title"].(string))
+				continue
+			}
 			if err != nil {
 				fmt.Println(err)
 			} else {

@@ -1,8 +1,12 @@
 package helper
 
 import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,7 +53,13 @@ func IsDirectLink(url string) (bool, string) {
 	if strings.HasSuffix(url, ".png") {
 		return true, ".png"
 	}
+	if strings.HasSuffix(url, ".png?1") {
+		return true, ".png"
+	}
 	if strings.HasSuffix(url, ".jpg") {
+		return true, ".jpg"
+	}
+	if strings.HasSuffix(url, ".jpg?1") {
 		return true, ".jpg"
 	}
 	if strings.HasSuffix(url, ".jpeg") {
@@ -74,25 +84,35 @@ func WriteLog(text string) {
 }
 
 // DownloadFile downloads a file to download/+name
-func DownloadFile(filename string, url string) error {
-	name := getFileName(filename, 0)
+func DownloadFile(filename string, url string) (bool, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer resp.Body.Close()
-
-	out, err := os.Create("download/" + name)
+	fileContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return false, err
 	}
-	defer out.Close()
+	hashsum, err := generateSha1SumBytes(fileContent)
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	name, createFile, err := getFileName(filename, 0, hashsum)
+	if err != nil {
+		return false, err
+	}
+	if !createFile {
+		return true, nil
+	}
+	out, err := os.Create("download/" + name)
+	defer out.Close()
+	_, err = io.Copy(out, bytes.NewReader(fileContent))
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
-func getFileName(name string, counter int) string {
+func getFileName(name string, counter int, sha1sum string) (string, bool, error) {
 	cleanName := sanitizeFileName(name)
 	ext := filepath.Ext(cleanName)
 	if len(cleanName) > 130 {
@@ -104,11 +124,41 @@ func getFileName(name string, counter int) string {
 		newName = noExt + "_" + strconv.Itoa(counter) + ext
 	}
 	if FileExists("download/" + newName) {
+		checkSumExistingFile, err := generateSha1SumFile("download/" + newName)
+		if err != nil {
+			return "", false, err
+		}
+		if checkSumExistingFile == sha1sum {
+			return "", false, nil
+		}
 		counter++
-		return getFileName(name, counter)
+		return getFileName(name, counter, sha1sum)
 	} else {
-		return newName
+		return newName, true, nil
 	}
+}
+
+func generateSha1SumFile(file string) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+	return generateSha1SumBytes(content)
+}
+
+func generateSha1SumBytes(input []byte) (string, error) {
+	hash := sha1.New()
+	_, err := io.Copy(hash, bytes.NewReader(input))
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func sanitizeFileName(name string) string {
