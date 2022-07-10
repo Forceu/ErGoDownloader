@@ -110,20 +110,19 @@ func DownloadSavedPosts(posts []interface{}, token string, unsave bool) (string,
 		isValidLink, extension := helper.IsDirectLink(childData["url"].(string))
 		if isValidLink {
 			duplicate, err := helper.DownloadFile(childData["title"].(string)+extension, childData["url"].(string))
+			if err != nil {
+				return "", "", err
+			}
 			if duplicate {
 				fmt.Println("Duplicate, not saving: " + childData["title"].(string))
-				continue
-			}
-			if err != nil {
-				fmt.Println(err)
 			} else {
 				fmt.Println("Download complete: " + childData["title"].(string))
 				helper.WriteLog(childData["title"].(string) + ":  https://reddit.com" + childData["permalink"].(string))
-				if unsave {
-					err = UnsavePost(token, childData["name"].(string))
-					if err != nil {
-						fmt.Println(err)
-					}
+			}
+			if unsave {
+				err = UnsavePost(token, childData["name"].(string))
+				if err != nil {
+					fmt.Println(err)
 				}
 			}
 		} else {
