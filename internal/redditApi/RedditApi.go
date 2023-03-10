@@ -87,7 +87,7 @@ func GetSavedPosts(token, username, afterId string) ([]interface{}, error) {
 }
 
 // DownloadSavedPosts downloads the given posts and unsaves them if requested
-func DownloadSavedPosts(posts []interface{}, token string, unsave bool) (string, string, error) {
+func DownloadSavedPosts(posts []interface{}, token string, unsave, logging bool) (string, string, error) {
 	var firstPost, lastPost string
 	for _, value := range posts {
 		child := value.(map[string]interface{})
@@ -117,7 +117,9 @@ func DownloadSavedPosts(posts []interface{}, token string, unsave bool) (string,
 				fmt.Println("Duplicate, not saving: " + childData["title"].(string))
 			} else {
 				fmt.Println("Download complete: " + childData["title"].(string))
-				helper.WriteLog(childData["title"].(string) + ":  https://reddit.com" + childData["permalink"].(string))
+				if logging {
+					helper.WriteLog(childData["title"].(string) + ":  https://reddit.com" + childData["permalink"].(string))
+				}
 			}
 			if unsave {
 				err = UnsavePost(token, childData["name"].(string))

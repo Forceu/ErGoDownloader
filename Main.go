@@ -14,7 +14,7 @@ var Version = "v1.0"
 var BuildTime = "Not set"
 
 func main() {
-	unsave, showVersion := parseFlags()
+	unsave, showVersion, noLogFile := parseFlags()
 	if showVersion {
 		fmt.Printf("ErGo Downloader %s\nBuild Time: %s\n", Version, BuildTime)
 		os.Exit(0)
@@ -39,7 +39,7 @@ func main() {
 			return
 		}
 		var firstPost string
-		firstPost, afterId, err = redditApi.DownloadSavedPosts(posts, token, unsave)
+		firstPost, afterId, err = redditApi.DownloadSavedPosts(posts, token, unsave, !noLogFile)
 		if firstId == "" {
 			firstId = firstPost
 		}
@@ -55,9 +55,10 @@ func main() {
 	}
 }
 
-func parseFlags() (bool, bool) {
+func parseFlags() (bool, bool, bool) {
 	isUnsave := flag.Bool("unsave", false, "Pass to unsave downloaded posts")
+	noLog := flag.Bool("no-log", false, "Disable log file")
 	showVersion := flag.Bool("v", false, "Show version")
 	flag.Parse()
-	return *isUnsave, *showVersion
+	return *isUnsave, *showVersion, *noLog
 }

@@ -119,6 +119,9 @@ func getFileName(name string, counter int, sha1sum string) (string, bool, error)
 		cleanName = cleanName[:130] + ext
 	}
 	noExt := cleanName[0 : len(cleanName)-len(ext)]
+	if strings.HasPrefix(noExt, ".") {
+		noExt = "_" + noExt
+	}
 	newName := cleanName
 	if counter != 0 {
 		newName = noExt + "_" + strconv.Itoa(counter) + ext
