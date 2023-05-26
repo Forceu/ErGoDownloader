@@ -111,7 +111,8 @@ func DownloadSavedPosts(posts []interface{}, token string, unsave, logging bool)
 		if isValidLink {
 			duplicate, err := helper.DownloadFile(childData["title"].(string)+extension, childData["url"].(string))
 			if err != nil {
-				return "", "", err
+				fmt.Printf("Unable to download %s: %s\n", childData["title"].(string), err.Error())
+				continue
 			}
 			if duplicate {
 				fmt.Println("Duplicate, not saving: " + childData["title"].(string))

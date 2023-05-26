@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -85,14 +85,26 @@ func WriteLog(text string) {
 
 // DownloadFile downloads a file to download/+name
 func DownloadFile(filename string, url string) (bool, error) {
-	resp, err := http.Get(url)
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return false, err
 	}
 	defer resp.Body.Close()
-	fileContent, err := ioutil.ReadAll(resp.Body)
+	fileContent, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false, err
+	}
+	if len(fileContent) == 0 {
+		return false, errors.New("download is 0 bytes")
 	}
 	hashsum, err := generateSha1SumBytes(fileContent)
 
